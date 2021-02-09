@@ -20,7 +20,7 @@ func (a *application) startBroker(endpoints string) error {
 }
 
 func (a *application) router(rc *[][]byte) {
-	valStr := string((*rc)[1])
+	valStr := string((*rc)[1][0])
 	//from := (*rc)[0]
 
 	if valStr == "c" {
@@ -30,6 +30,6 @@ func (a *application) router(rc *[][]byte) {
 		go a.newMessageHandler(&(*rc)[1])
 		a.infoLog.Println("new message")
 	} else {
-		a.infoLog.Printf("there is unkown type, vlaeue: %v\n", valStr)
+		a.infoLog.Printf("there is unkown type, value: %v\n", valStr)
 	}
 }

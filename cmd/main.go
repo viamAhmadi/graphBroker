@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"github.com/viamAhmadi/graphBroker/pkg/conn"
 	"log"
 	"os"
 )
@@ -11,6 +13,28 @@ type application struct {
 }
 
 func main() {
+	c := conn.SerializeConnection("192.168.1.1:5", "as", 1234, 1234, 4321)
+	fmt.Println(len(c))
+	fmt.Println(conn.ConvertToConnection(c))
+
+	m := conn.SerializeMessage(1, "si", "hello")
+	fmt.Println(len(*m))
+	fmt.Println(conn.ConvertToMessage(m))
+
+	d := conn.SerializeDone("192.168.2.3:123", "bi", 14)
+	fmt.Println(len(d))
+	fmt.Println(conn.ConvertToDone(d))
+
+	s := conn.SerializeSend("192.168.2.5:43215", "ds")
+	fmt.Println(len(s))
+	fmt.Println(conn.ConvertToSend(s))
+
+	list := []string{"5", "321", "789"}
+	f := conn.SerializeFactor("127.0.0.1:65432", "iq", "n", &list)
+	fmt.Println(len(*f))
+	fmt.Println(conn.ConvertToFactor(f))
+
+	return
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
