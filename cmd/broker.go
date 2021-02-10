@@ -29,7 +29,7 @@ func (a *application) router(rc *[][]byte) {
 	from := (*rc)[0]
 
 	if valStr == "c" {
-		go a.newConnectionHandler(from, &(*rc)[1])
+		go a.newReceiverConnectionHandler(from, &(*rc)[1])
 		a.infoLog.Println("new connection")
 	} else if valStr == "m" {
 		time.Sleep(3 * time.Second) // todo

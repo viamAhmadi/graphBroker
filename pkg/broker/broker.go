@@ -14,6 +14,11 @@ func New(sock *goczmq.Sock) *Broker {
 	return &b
 }
 
+// todo
+func (b *Broker) OpenConnection(c *conn.Connection) error {
+	return nil
+}
+
 // SendPacketSend sends send packet
 func (b *Broker) SendPacketSend(c *conn.Connection) error {
 	err := b.sock.SendFrame(c.From, goczmq.FlagMore)
@@ -22,4 +27,9 @@ func (b *Broker) SendPacketSend(c *conn.Connection) error {
 	}
 
 	return b.sock.SendFrame(conn.SerializeSend(c.Destination, c.Sign), goczmq.FlagNone)
+}
+
+// todo
+func (b *Broker) SendPacketFactor() error {
+	return nil
 }

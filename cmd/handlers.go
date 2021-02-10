@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (a *application) newConnectionHandler(from []byte, rc *[]byte) {
+func (a *application) newReceiverConnectionHandler(from []byte, rc *[]byte) {
 	c, err := conn.ConvertToConnection(from, *rc)
 	if err != nil {
 		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
@@ -22,32 +22,34 @@ func (a *application) newConnectionHandler(from []byte, rc *[]byte) {
 		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		return
 	}
-
 	go func() {
 		if err := a.broker.SendPacketSend(c); err != nil {
 			a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
-			c.CloseConnection()
 		}
 	}()
-
 	for {
 		select {
 		case m := <-c.ReceiveMsgCh:
 			fmt.Println(m)
-		case f := <-c.ReceiveFactor:
-			fmt.Println(f)
 		case d := <-c.ReceiveDoneCh:
 			fmt.Println(d)
-		case <-time.Tick(5 * time.Second):
+			if err := a.broker.SendPacketFactor(); err != nil {
+				a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
+			}
+		case <-time.After(5 * time.Second):
 			c.CloseConnection()
 		case <-c.CloseConnCh:
 			close(c.ReceiveMsgCh)
 			close(c.ReceiveDoneCh)
 			close(c.ReceiveFactor)
-			close(c.CloseConnCh)
-			break
+			return
 		}
 	}
+}
+
+// todo
+func (a *application) newSenderConnectionHandler() {
+
 }
 
 func (a *application) newMessageHandler(from []byte, rc *[]byte) {
@@ -62,8 +64,9 @@ func (a *application) newMessageHandler(from []byte, rc *[]byte) {
 		return
 	}
 
-	// to send to the destination
 	c.ReceiveMsgCh <- msg
+
+
 
 	if err := a.storage.AddMessage(msg); err != nil {
 		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})

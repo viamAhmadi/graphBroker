@@ -7,6 +7,20 @@ import (
 	"strings"
 )
 
+type Connection struct {
+	Type                 string // Type of request, c=connection or m=message ..
+	From                 []byte
+	Destination          string
+	Sign                 string
+	Count                int
+	FirstMsgId, EndMsgId int
+	ReceiveMsgCh         chan *Message // ReceiveMsgCh message packet
+	ReceiveDoneCh        chan *Done    // ReceiveDoneCh done packet
+	ReceiveFactor        chan *Factor  // ReceiveFactor factor packet
+	CloseConnCh          chan struct{}
+	Status               uint8
+}
+
 type Message struct {
 	Type        string
 	Destination string
@@ -68,11 +82,21 @@ func ConvertToConnection(from []byte, b []byte) (*Connection, error) {
 		ReceiveMsgCh:  make(chan *Message),
 		ReceiveDoneCh: make(chan *Done),
 		ReceiveFactor: make(chan *Factor),
+		CloseConnCh:   make(chan struct{}),
 	}, nil
 }
 
 func SerializeConnection(destination, sign string, count, firstMsgId, endMsgId int) []byte {
 	return []byte(fmt.Sprintf("c%s%s%d%d%d", util.ConvertDesToBytes(destination), sign, count, firstMsgId, endMsgId))
+}
+
+func (c *Connection) GetId() string {
+	return c.Destination + c.Sign
+}
+
+func (c *Connection) CloseConnection() {
+	c.Status = Close
+	close(c.CloseConnCh)
 }
 
 func ConvertToMessage(b *[]byte) (*Message, error) {

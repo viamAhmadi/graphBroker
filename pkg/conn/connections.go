@@ -4,6 +4,11 @@ import (
 	"errors"
 )
 
+var (
+	Open  = uint8(1)
+	Close = uint8(0)
+)
+
 const ok = "1"
 
 var ErrConvertToModel = errors.New("convert error")
