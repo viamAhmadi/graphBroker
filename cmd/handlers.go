@@ -66,7 +66,9 @@ func (a *application) newMessageHandler(from []byte, rc *[]byte) {
 
 	c.ReceiveMsgCh <- msg
 
-
+	if err := c.AddMsg(msg); err != nil {
+		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
+	}
 
 	if err := a.storage.AddMessage(msg); err != nil {
 		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})

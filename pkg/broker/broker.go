@@ -15,8 +15,13 @@ func New(sock *goczmq.Sock) *Broker {
 }
 
 // todo
-func (b *Broker) OpenConnection(c *conn.Connection) error {
-	return nil
+func (b *Broker) OpenConnection(destination, destinationOfPackets string, count, firstMsgId, endMsgId int) (*goczmq.Sock, error) {
+	cPacket := conn.SerializeConnection(destinationOfPackets, generateSign(destinationOfPackets), count, firstMsgId, endMsgId)
+	dealer, err := goczmq.NewDealer(destination)
+	if err != nil {
+		return nil, err
+	}
+	return dealer, dealer.SendFrame(cPacket, goczmq.FlagNone)
 }
 
 // SendPacketSend sends send packet

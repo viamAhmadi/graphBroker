@@ -18,7 +18,8 @@ type Connection struct {
 	ReceiveDoneCh        chan *Done    // ReceiveDoneCh done packet
 	ReceiveFactor        chan *Factor  // ReceiveFactor factor packet
 	CloseConnCh          chan struct{}
-	Status               uint8
+	Status               uint8 // connection is closed ?
+	Messages             *Messages
 }
 
 type Message struct {
@@ -83,6 +84,7 @@ func ConvertToConnection(from []byte, b []byte) (*Connection, error) {
 		ReceiveDoneCh: make(chan *Done),
 		ReceiveFactor: make(chan *Factor),
 		CloseConnCh:   make(chan struct{}),
+		Messages:      &Messages{},
 	}, nil
 }
 
@@ -92,6 +94,10 @@ func SerializeConnection(destination, sign string, count, firstMsgId, endMsgId i
 
 func (c *Connection) GetId() string {
 	return c.Destination + c.Sign
+}
+
+func (c *Connection) AddMsg(m *Message) error {
+	return c.Messages.Add(m)
 }
 
 func (c *Connection) CloseConnection() {
@@ -123,6 +129,11 @@ func SerializeMessage(id int, sign, destination, content string) *[]byte {
 
 func (m *Message) GetConnId() string {
 	return m.Destination + m.Sign
+}
+
+func (m *Message) GetId() string {
+	//return m.Destination + m.Sign + strconv.Itoa(m.Id)
+	return strconv.Itoa(m.Id)
 }
 
 func ConvertToDone(b []byte) (Done, error) {
