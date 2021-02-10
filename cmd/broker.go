@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/viamAhmadi/graphBroker/pkg/broker"
 	"github.com/zeromq/goczmq"
 )
 
@@ -9,6 +10,9 @@ func (a *application) startBroker(endpoints string) error {
 	if err != nil {
 		return err
 	}
+
+	a.broker = broker.New(router)
+
 	for {
 		msg, err := router.RecvMessage()
 		if err != nil {
@@ -21,10 +25,10 @@ func (a *application) startBroker(endpoints string) error {
 
 func (a *application) router(rc *[][]byte) {
 	valStr := string((*rc)[1][0])
-	//from := (*rc)[0]
+	from := (*rc)[0]
 
 	if valStr == "c" {
-		go a.newConnectionHandler(&(*rc)[1])
+		go a.newConnectionHandler(from, &(*rc)[1])
 		a.infoLog.Println("new connection")
 	} else if valStr == "m" {
 		go a.newMessageHandler(&(*rc)[1])

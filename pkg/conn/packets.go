@@ -7,14 +7,6 @@ import (
 	"strings"
 )
 
-type Connection struct {
-	Type                 string // Type of request, c=connection or m=message ..
-	Destination          string
-	Sign                 string
-	Count                int
-	FirstMsgId, EndMsgId int
-}
-
 type Message struct {
 	Type    string
 	Id      int    // 4 bytes
@@ -43,28 +35,37 @@ type Factor struct {
 	List        []string
 }
 
-func ConvertToConnection(b []byte) (Connection, error) {
+type Error struct {
+	// todo
+}
+
+func ConvertToConnection(from []byte, b []byte) (*Connection, error) {
 	if cap(b) < 39 {
-		return Connection{}, ErrConvertToModel
+		return nil, ErrConvertToModel
 	}
 	count, err := strconv.Atoi(string(b[25:29]))
 	if err != nil {
-		return Connection{}, err
+		return nil, err
 	}
 	firstMsgId, err := strconv.Atoi(string(b[29:33]))
 	if err != nil {
-		return Connection{}, err
+		return nil, err
 	}
 	endMsgId, err := strconv.Atoi(string(b[33:37]))
 	if err != nil {
-		return Connection{}, err
+		return nil, err
 	}
-	return Connection{Type: string(b[0]),
-		Destination: util.RemoveAdditionalCharacters(b[1:23]),
-		Sign:        string(b[23:25]),
-		Count:       count,
-		FirstMsgId:  firstMsgId,
-		EndMsgId:    endMsgId,
+	return &Connection{
+		Type:          string(b[0]),
+		From:          from,
+		Destination:   util.RemoveAdditionalCharacters(b[1:23]),
+		Sign:          string(b[23:25]),
+		Count:         count,
+		FirstMsgId:    firstMsgId,
+		EndMsgId:      endMsgId,
+		ReceiveMsgCh:  make(chan *Message),
+		ReceiveDoneCh: make(chan *Done),
+		ReceiveFactor: make(chan *Factor),
 	}, nil
 }
 
@@ -91,6 +92,11 @@ func ConvertToMessage(b *[]byte) (*Message, error) {
 func SerializeMessage(id int, sign, content string) *[]byte {
 	v := []byte(fmt.Sprintf("m%s%s%s", util.ConvertIdToBytes(id), sign, content))
 	return &v
+}
+
+func (m *Message) GetConnId() string {
+	// todo, add destination to msg struct
+	return ""
 }
 
 func ConvertToDone(b []byte) (Done, error) {
