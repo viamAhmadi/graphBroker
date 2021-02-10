@@ -12,7 +12,6 @@ func (a *application) newConnectionHandler(from []byte, rc *[]byte) {
 		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		return
 	}
-
 	// memory tmp
 	if err := a.conns.Add(c); err != nil {
 		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
@@ -57,7 +56,6 @@ func (a *application) newMessageHandler(from []byte, rc *[]byte) {
 		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		return
 	}
-
 	c := a.conns.Get(msg.GetConnId())
 	if c == nil {
 		a.sendPacketError(conn.Error{Msg: "connection not found", Destination: from})

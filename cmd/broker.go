@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/viamAhmadi/graphBroker/pkg/broker"
 	"github.com/zeromq/goczmq"
+	"time"
 )
 
 func (a *application) startBroker(endpoints string) error {
@@ -31,6 +32,7 @@ func (a *application) router(rc *[][]byte) {
 		go a.newConnectionHandler(from, &(*rc)[1])
 		a.infoLog.Println("new connection")
 	} else if valStr == "m" {
+		time.Sleep(3 * time.Second) // todo
 		go a.newMessageHandler(from, &(*rc)[1])
 		a.infoLog.Println("new message")
 	} else {

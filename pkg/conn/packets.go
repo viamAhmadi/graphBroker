@@ -87,13 +87,13 @@ func ConvertToMessage(b *[]byte) (*Message, error) {
 		Type:        string((*b)[0]),
 		Id:          i,
 		Sign:        string((*b)[5:7]),
-		Destination: util.RemoveAdditionalCharacters((*b)[7:23]),
-		Content:     string((*b)[23:]),
+		Destination: util.RemoveAdditionalCharacters((*b)[7:29]),
+		Content:     string((*b)[29:]),
 	}, nil
 }
 
 func SerializeMessage(id int, sign, destination, content string) *[]byte {
-	v := []byte(fmt.Sprintf("m%s%s%s%s", util.ConvertIdToBytes(id), sign, destination, content))
+	v := []byte(fmt.Sprintf("m%s%s%s%s", util.ConvertIdToBytes(id), sign, util.ConvertDesToBytes(destination), content))
 	return &v
 }
 
