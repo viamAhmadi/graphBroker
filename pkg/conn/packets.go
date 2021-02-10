@@ -8,10 +8,11 @@ import (
 )
 
 type Message struct {
-	Type    string
-	Id      int    // 4 bytes
-	Sign    string // 2 bytes
-	Content string // 8 kiloBytes
+	Type        string
+	Destination string
+	Id          int    // 4 bytes
+	Sign        string // 2 bytes
+	Content     string // 8 kiloBytes
 }
 
 type Done struct {
@@ -36,11 +37,12 @@ type Factor struct {
 }
 
 type Error struct {
-	// todo
+	Msg         string
+	Destination []byte
 }
 
 func ConvertToConnection(from []byte, b []byte) (*Connection, error) {
-	if cap(b) < 39 {
+	if cap(b) < 37 {
 		return nil, ErrConvertToModel
 	}
 	count, err := strconv.Atoi(string(b[25:29]))
@@ -82,21 +84,21 @@ func ConvertToMessage(b *[]byte) (*Message, error) {
 		return nil, ErrConvertToModel
 	}
 	return &Message{
-		Type:    string((*b)[0]),
-		Id:      i,
-		Sign:    string((*b)[5:7]),
-		Content: string((*b)[7:]),
+		Type:        string((*b)[0]),
+		Id:          i,
+		Sign:        string((*b)[5:7]),
+		Destination: util.RemoveAdditionalCharacters((*b)[7:23]),
+		Content:     string((*b)[23:]),
 	}, nil
 }
 
-func SerializeMessage(id int, sign, content string) *[]byte {
-	v := []byte(fmt.Sprintf("m%s%s%s", util.ConvertIdToBytes(id), sign, content))
+func SerializeMessage(id int, sign, destination, content string) *[]byte {
+	v := []byte(fmt.Sprintf("m%s%s%s%s", util.ConvertIdToBytes(id), sign, destination, content))
 	return &v
 }
 
 func (m *Message) GetConnId() string {
-	// todo, add destination to msg struct
-	return ""
+	return m.Destination + m.Sign
 }
 
 func ConvertToDone(b []byte) (Done, error) {

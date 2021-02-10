@@ -9,31 +9,29 @@ import (
 func (a *application) newConnectionHandler(from []byte, rc *[]byte) {
 	c, err := conn.ConvertToConnection(from, *rc)
 	if err != nil {
-		a.sendPacketError(conn.Error{})
+		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		return
 	}
 
 	// memory tmp
 	if err := a.conns.Add(c); err != nil {
-		a.sendPacketError(conn.Error{})
+		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		return
 	}
 
 	if err := a.storage.AddConn(c); err != nil {
-		a.sendPacketError(conn.Error{})
+		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		return
 	}
 
 	go func() {
-		fmt.Println("28 execution")
 		if err := a.broker.SendPacketSend(c); err != nil {
-			a.sendPacketError(conn.Error{})
+			a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 			c.CloseConnection()
 		}
 	}()
 
 	for {
-		fmt.Println("36 execution")
 		select {
 		case m := <-c.ReceiveMsgCh:
 			fmt.Println(m)
@@ -53,18 +51,16 @@ func (a *application) newConnectionHandler(from []byte, rc *[]byte) {
 	}
 }
 
-func (a *application) newMessageHandler(rc *[]byte) {
+func (a *application) newMessageHandler(from []byte, rc *[]byte) {
 	msg, err := conn.ConvertToMessage(rc)
 	if err != nil {
-		a.sendPacketError(conn.Error{})
-		a.errorLog.Println(err)
+		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		return
 	}
 
 	c := a.conns.Get(msg.GetConnId())
 	if c == nil {
-		a.sendPacketError(conn.Error{})
-		a.errorLog.Println(err)
+		a.sendPacketError(conn.Error{Msg: "connection not found", Destination: from})
 		return
 	}
 
@@ -72,8 +68,7 @@ func (a *application) newMessageHandler(rc *[]byte) {
 	c.ReceiveMsgCh <- msg
 
 	if err := a.storage.AddMessage(msg); err != nil {
-		a.sendPacketError(conn.Error{})
-		a.errorLog.Println(err)
+		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		return
 	}
 }

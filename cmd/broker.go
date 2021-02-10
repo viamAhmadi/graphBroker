@@ -31,7 +31,7 @@ func (a *application) router(rc *[][]byte) {
 		go a.newConnectionHandler(from, &(*rc)[1])
 		a.infoLog.Println("new connection")
 	} else if valStr == "m" {
-		go a.newMessageHandler(&(*rc)[1])
+		go a.newMessageHandler(from, &(*rc)[1])
 		a.infoLog.Println("new message")
 	} else {
 		a.infoLog.Printf("there is unkown type, value: %v\n", valStr)
