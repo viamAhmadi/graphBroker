@@ -10,9 +10,12 @@ var (
 )
 
 const ok = "1"
+const YES = byte(1)
+const NO = byte(0)
 
 var ErrConvertToModel = errors.New("convert error")
 var ErrConnExists = errors.New("connection exists")
+var ErrDealer = errors.New("dealer was nil")
 
 type Connections map[string]*Connection
 

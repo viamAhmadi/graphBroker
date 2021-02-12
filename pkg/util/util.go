@@ -22,8 +22,8 @@ func ConvertDesToBytes(d string) []byte {
 	return b
 }
 
-// ConvertIdToBytes converts message id to bytes array
-func ConvertIdToBytes(id int) []byte {
+// ConvertIntToBytes
+func ConvertIntToBytes(id int) []byte {
 	b := []byte(strconv.Itoa(id))
 	if len(b) < 4 {
 		l := 4 - len(b)

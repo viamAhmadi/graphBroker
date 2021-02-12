@@ -7,31 +7,18 @@ import (
 	"strings"
 )
 
-type Connection struct {
-	Type                 string // Type of request, c=connection or m=message ..
-	From                 []byte
-	Destination          string
-	Sign                 string
-	Count                int
-	FirstMsgId, EndMsgId int
-	ReceiveMsgCh         chan *Message // ReceiveMsgCh message packet
-	ReceiveDoneCh        chan *Done    // ReceiveDoneCh done packet
-	ReceiveFactor        chan *Factor  // ReceiveFactor factor packet
-	CloseConnCh          chan struct{}
-	Status               uint8 // connection is closed ?
-	Messages             *Messages
-}
-
 type Message struct {
 	Type        string
+	Forward     byte
 	Destination string
 	Id          int    // 4 bytes
-	Sign        string // 2 bytes
+	Sign        string // 4 bytes
 	Content     string // 8 kiloBytes
 }
 
 type Done struct {
 	Type        string
+	Forward     byte
 	Destination string
 	Sign        string
 	Count       int
@@ -47,7 +34,7 @@ type Factor struct {
 	Type        string
 	Destination string
 	Sign        string
-	Status      string
+	Successful  byte
 	List        []string
 }
 
@@ -56,57 +43,8 @@ type Error struct {
 	Destination []byte
 }
 
-func ConvertToConnection(from []byte, b []byte) (*Connection, error) {
-	if cap(b) < 37 {
-		return nil, ErrConvertToModel
-	}
-	count, err := strconv.Atoi(string(b[25:29]))
-	if err != nil {
-		return nil, err
-	}
-	firstMsgId, err := strconv.Atoi(string(b[29:33]))
-	if err != nil {
-		return nil, err
-	}
-	endMsgId, err := strconv.Atoi(string(b[33:37]))
-	if err != nil {
-		return nil, err
-	}
-	return &Connection{
-		Type:          string(b[0]),
-		From:          from,
-		Destination:   util.RemoveAdditionalCharacters(b[1:23]),
-		Sign:          string(b[23:25]),
-		Count:         count,
-		FirstMsgId:    firstMsgId,
-		EndMsgId:      endMsgId,
-		ReceiveMsgCh:  make(chan *Message),
-		ReceiveDoneCh: make(chan *Done),
-		ReceiveFactor: make(chan *Factor),
-		CloseConnCh:   make(chan struct{}),
-		Messages:      &Messages{},
-	}, nil
-}
-
-func SerializeConnection(destination, sign string, count, firstMsgId, endMsgId int) []byte {
-	return []byte(fmt.Sprintf("c%s%s%d%d%d", util.ConvertDesToBytes(destination), sign, count, firstMsgId, endMsgId))
-}
-
-func (c *Connection) GetId() string {
-	return c.Destination + c.Sign
-}
-
-func (c *Connection) AddMsg(m *Message) error {
-	return c.Messages.Add(m)
-}
-
-func (c *Connection) CloseConnection() {
-	c.Status = Close
-	close(c.CloseConnCh)
-}
-
 func ConvertToMessage(b *[]byte) (*Message, error) {
-	if cap(*b) < 8 {
+	if cap(*b) < 10 {
 		return nil, ErrConvertToModel
 	}
 	i, err := strconv.Atoi(util.RemoveAdditionalCharacters((*b)[1:5]))
@@ -116,70 +54,85 @@ func ConvertToMessage(b *[]byte) (*Message, error) {
 	return &Message{
 		Type:        string((*b)[0]),
 		Id:          i,
-		Sign:        string((*b)[5:7]),
-		Destination: util.RemoveAdditionalCharacters((*b)[7:29]),
-		Content:     string((*b)[29:]),
+		Sign:        util.RemoveAdditionalCharacters((*b)[5:9]),
+		Destination: util.RemoveAdditionalCharacters((*b)[9:31]),
+		Forward:     (*b)[31],
+		Content:     string((*b)[32:]),
 	}, nil
 }
 
-func SerializeMessage(id int, sign, destination, content string) *[]byte {
-	v := []byte(fmt.Sprintf("m%s%s%s%s", util.ConvertIdToBytes(id), sign, util.ConvertDesToBytes(destination), content))
+func SerializeMessage(id int, forward byte, sign, destination string, content *string) *[]byte {
+	s, _ := strconv.Atoi(sign)
+	v := []byte(fmt.Sprintf("m%s%s%s%s%s", util.ConvertIntToBytes(id), util.ConvertIntToBytes(s), util.ConvertDesToBytes(destination), string(forward), *content))
 	return &v
 }
 
 func (m *Message) GetConnId() string {
+	if m.Forward == YES {
+		return m.Destination + m.Sign + "s"
+	}
 	return m.Destination + m.Sign
 }
 
 func (m *Message) GetId() string {
-	//return m.Destination + m.Sign + strconv.Itoa(m.Id)
 	return strconv.Itoa(m.Id)
 }
 
 func ConvertToDone(b []byte) (Done, error) {
-	if len(b) < 19 {
+	if len(b) < 21 {
 		return Done{}, ErrConvertToModel
 	}
 
-	c, err := strconv.Atoi(util.RemoveAdditionalCharacters(b[25:29]))
+	c, err := strconv.Atoi(util.RemoveAdditionalCharacters(b[27:31]))
 	if err != nil {
 		return Done{}, err
 	}
 	return Done{
 		Type:        string(b[0]),
 		Destination: util.RemoveAdditionalCharacters(b[1:23]),
-		Sign:        string(b[23:25]),
+		Sign:        util.RemoveAdditionalCharacters(b[23:27]),
 		Count:       c,
+		Forward:     b[31],
 	}, nil
 }
 
-func SerializeDone(destination, sign string, count int) []byte {
-	return []byte(fmt.Sprintf("d%s%s%s", util.ConvertDesToBytes(destination), sign, util.ConvertIdToBytes(count)))
+func SerializeDone(destination, sign string, forward byte, count int) []byte {
+	s, _ := strconv.Atoi(sign)
+	return []byte(fmt.Sprintf("d%s%s%s%s", util.ConvertDesToBytes(destination), util.ConvertIntToBytes(s), util.ConvertIntToBytes(count), string(forward)))
+}
+
+func (d *Done) GetConnId() string {
+	if d.Forward == YES {
+		return d.Destination + d.Sign + "s"
+	}
+	return d.Destination + d.Sign
 }
 
 func ConvertToSend(b []byte) (Send, error) {
-	if len(b) != 25 {
+	if len(b) < 25 {
 		return Send{}, ErrConvertToModel
 	}
 	return Send{
 		Type:        string(b[0]),
 		Destination: util.RemoveAdditionalCharacters(b[1:23]),
-		Sign:        string(b[23:25]),
+		Sign:        util.RemoveAdditionalCharacters(b[23:27]),
 	}, nil
 }
 
 func SerializeSend(destination, sign string) []byte {
-	return []byte(fmt.Sprintf("s%s%s", util.ConvertDesToBytes(destination), sign))
+	s, _ := strconv.Atoi(sign)
+	return []byte(fmt.Sprintf("s%s%s", util.ConvertDesToBytes(destination), util.ConvertIntToBytes(s)))
 }
 
 func ConvertToFactor(b *[]byte) (*Factor, error) {
 	if len(*b) < 16 {
 		return nil, ErrConvertToModel
 	}
-	status := string((*b)[25:26])
+	//status := string((*b)[27:28])
+	successful := (*b)[27]
 	var list []string
-	if status != ok {
-		nums := strings.Split(string((*b)[26:]), ".")
+	if successful != YES {
+		nums := strings.Split(string((*b)[28:]), ".")
 		for i := 0; i < len(nums); i++ {
 			val := nums[i]
 			if val == "" {
@@ -191,19 +144,21 @@ func ConvertToFactor(b *[]byte) (*Factor, error) {
 	return &Factor{
 		Type:        string((*b)[0]),
 		Destination: util.RemoveAdditionalCharacters((*b)[1:23]),
-		Sign:        string((*b)[23:25]),
-		Status:      status,
-		List:        list,
+		Sign:        util.RemoveAdditionalCharacters((*b)[23:27]),
+		//Status:      status,
+		Successful: successful,
+		List:       list,
 	}, nil
 }
 
-func SerializeFactor(destination, sign, status string, list *[]string) *[]byte {
+func SerializeFactor(destination, sign string, successful byte, list *[]string) *[]byte {
 	tmp := ""
-	if status != ok {
+	if successful != YES {
 		if list != nil {
 			tmp = strings.Join(*list, ".")
 		}
 	}
-	b := []byte(fmt.Sprintf("f%s%s%s%s", util.ConvertDesToBytes(destination), sign, status, tmp))
+	s, _ := strconv.Atoi(sign)
+	b := []byte(fmt.Sprintf("f%s%s%s%s", util.ConvertDesToBytes(destination), util.ConvertIntToBytes(s), string(successful), tmp))
 	return &b
 }

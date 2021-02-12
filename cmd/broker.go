@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/viamAhmadi/graphBroker/pkg/broker"
+	"github.com/viamAhmadi/graphBroker/pkg/conn"
 	"github.com/zeromq/goczmq"
 	"time"
 )
@@ -12,7 +12,7 @@ func (a *application) startBroker(endpoints string) error {
 		return err
 	}
 
-	a.broker = broker.New(router)
+	a.broker = conn.New(router)
 
 	for {
 		msg, err := router.RecvMessage()
@@ -29,13 +29,16 @@ func (a *application) router(rc *[][]byte) {
 	from := (*rc)[0]
 
 	if valStr == "c" {
-		go a.newReceiverConnectionHandler(from, &(*rc)[1])
-		a.infoLog.Println("new connection")
+		go a.connectionHandler(from, &(*rc)[1])
+		//a.infoLog.Println("new connection")
 	} else if valStr == "m" {
 		time.Sleep(3 * time.Second) // todo
-		go a.newMessageHandler(from, &(*rc)[1])
-		a.infoLog.Println("new message")
+		go a.messageHandler(from, &(*rc)[1])
+		//a.infoLog.Println("new message")
+	} else if valStr == "d" {
+		go a.doneHandler(from, &(*rc)[1])
+		//a.infoLog.Println("new message")
 	} else {
-		a.infoLog.Printf("there is unkown type, value: %v\n", valStr)
+		a.infoLog.Printf("there is unknown type, value: %v\n", valStr)
 	}
 }

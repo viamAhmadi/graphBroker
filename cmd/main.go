@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/viamAhmadi/graphBroker/pkg/broker"
 	"github.com/viamAhmadi/graphBroker/pkg/conn"
 	"github.com/viamAhmadi/graphBroker/pkg/models/storage"
 	"github.com/zeromq/goczmq"
@@ -10,7 +9,7 @@ import (
 )
 
 type application struct {
-	broker   *broker.Broker
+	broker   *conn.Broker
 	errorLog *log.Logger
 	infoLog  *log.Logger
 	conns    conn.Connections
@@ -18,11 +17,11 @@ type application struct {
 }
 
 func main() {
-	c := conn.SerializeConnection("192.168.001.001:55555", "as", 1234, 1234, 4321)
-	//fmt.Println(len(c))
+	c := conn.SerializeConnection(conn.YES, "tcp://127.0.0.1:5555", "as", 1, 1, 1)
 	//fmt.Println(conn.ConvertToConnection(nil, c))
 
-	m := conn.SerializeMessage(1, "as", "192.168.001.001:55555", "hello")
+	content := "hello"
+	m := conn.SerializeMessage(1, conn.YES, "as", "tcp://127.0.0.1:5555", &content)
 	//fmt.Println(len(*m))
 	//fmt.Println(conn.ConvertToMessage(m))
 	//
@@ -44,8 +43,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer dealer.Destroy()
-
-	log.Println("dealer created and connected")
 
 	err = dealer.SendFrame(c, goczmq.FlagNone)
 	if err != nil {
