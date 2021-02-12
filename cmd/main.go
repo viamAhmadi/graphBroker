@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/viamAhmadi/graphBroker/pkg/conn"
 	"github.com/viamAhmadi/graphBroker/pkg/models/storage"
-	"github.com/zeromq/goczmq"
 	"log"
 	"os"
 )
@@ -17,11 +16,11 @@ type application struct {
 }
 
 func main() {
-	c := conn.SerializeConnection(conn.YES, "tcp://127.0.0.1:5555", "as", 1, 1, 1)
-	//fmt.Println(conn.ConvertToConnection(nil, c))
-
-	content := "hello"
-	m := conn.SerializeMessage(1, conn.YES, "as", "tcp://127.0.0.1:5555", &content)
+	//c := conn.SerializeConnection(conn.YES, "tcp://127.0.0.1:5555", "as", 1, 1, 1)
+	////fmt.Println(conn.ConvertToConnection(nil, c))
+	//
+	//content := "hello"
+	//m := conn.SerializeMessage(1, conn.YES, "as", "tcp://127.0.0.1:5555", &content)
 	//fmt.Println(len(*m))
 	//fmt.Println(conn.ConvertToMessage(m))
 	//
@@ -38,20 +37,20 @@ func main() {
 	//fmt.Println(len(*f))
 	//fmt.Println(conn.ConvertToFactor(f))
 
-	dealer, err := goczmq.NewDealer("tcp://127.0.0.1:5555")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer dealer.Destroy()
-
-	err = dealer.SendFrame(c, goczmq.FlagNone)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = dealer.SendFrame(*m, goczmq.FlagNone)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//dealer, err := goczmq.NewDealer("tcp://127.0.0.1:5555")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//defer dealer.Destroy()
+	//
+	//err = dealer.SendFrame(c, goczmq.FlagNone)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//err = dealer.SendFrame(*m, goczmq.FlagNone)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)

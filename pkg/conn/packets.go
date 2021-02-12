@@ -75,7 +75,7 @@ func (m *Message) GetConnId() string {
 }
 
 func (m *Message) GetId() string {
-	return strconv.Itoa(m.Id)
+	return strconv.Itoa(m.Id) + m.Sign
 }
 
 func ConvertToDone(b []byte) (Done, error) {

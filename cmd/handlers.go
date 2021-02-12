@@ -12,21 +12,19 @@ func (a *application) connectionHandler(from []byte, rc *[]byte) {
 		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		return
 	}
+	fmt.Println("connId: ", c.GetId())
 	// memory tmp
 	if err := a.conns.Add(c); err != nil {
 		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
+	}
+	if err := a.storage.AddConn(c); err != nil {
+		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		return
-	} else {
-		if err := a.storage.AddConn(c); err != nil {
-			a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
-			return
-		}
 	}
 
 	go func() {
 		// forward to the destination
 		if c.Forward == conn.YES {
-			fmt.Println("Broker: opening connection to A")
 			dealer, err := conn.OpenDeal(c.Destination)
 			if err != nil {
 				a.errorLog.Println(err)
@@ -37,29 +35,30 @@ func (a *application) connectionHandler(from []byte, rc *[]byte) {
 				go a.forwardResultHandler(c)
 			}
 		}
-		// tell the sender Im ready for receive
-		fmt.Println("Are you ready? Broker and A?")
 		if err := a.broker.SendPacketSend(c); err != nil {
 			a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		}
 	}()
+	r := false
 	for {
 		select {
 		case m := <-c.ReceiveMsgCh:
-			fmt.Println("Broker: forwarding one message to A")
+			if !r {
+				r = true
+				time.Sleep(1 * time.Second)
+			}
 			m.Forward = conn.NO
 			m.Sign = c.SendSign
 			if err := conn.SendFrame(c, m); err != nil {
 				a.errorLog.Println(err)
 			}
-			// check last message id and send done packet
-			if c.EndMsgId == m.Id {
-				fmt.Println("Broker: sending done packet to A")
+			if c.Count == m.Id {
 				if err := conn.SendPacketDone(c, conn.NO); err != nil {
 					a.errorLog.Println(err)
 				}
 			}
 		case _ = <-c.ReceiveDoneCh:
+			fmt.Println("receive done packet")
 			if c.Count == c.CountOfRcMessages() {
 				c.Successful = conn.YES
 			} else {
@@ -86,14 +85,17 @@ func (a *application) forwardResultHandler(c *conn.Connection) {
 		for {
 			select {
 			case s := <-c.ReceiveSendCh:
-				// if there is some errors -> dealer=nil
-				// send messages , the server is ready
-				//fmt.Println(s)
-				// start sending ...
-				fmt.Println("C[s]: I'm ready to receive  ", s)
+				fmt.Println("ReceiveSendCh  ", s)
 			case f := <-c.ReceiveFactorCh:
-				fmt.Println("f")
-				fmt.Println(f)
+				if f == nil {
+					fmt.Println("factor was nil")
+					return
+				}
+				l := 0
+				if f.List != nil {
+					l = len(f.List)
+				}
+				fmt.Printf("\nReceived Factor\nresult:\t\tsend: %d\tmissed: %d \ndetination: %s\n\n", c.Count, l, f.Destination)
 				return
 			case <-time.After(6 * time.Second):
 				return
@@ -111,7 +113,6 @@ func (a *application) messageHandler(from []byte, rc *[]byte) {
 		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		return
 	}
-
 	c := a.conns.Get(msg.GetConnId())
 	if c == nil {
 		a.sendPacketError(conn.Error{Msg: "connection not found", Destination: from})
@@ -119,10 +120,19 @@ func (a *application) messageHandler(from []byte, rc *[]byte) {
 	}
 
 	if c.Forward == conn.YES {
-		if err := c.AddMsg(msg); err != nil {
+		c.ReceiveMsgCh <- msg
+	}
+
+	if err := c.AddMsg(msg); err != nil {
+		a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
+	}
+
+	if c.Count == c.Counter {
+		c.Successful = conn.YES
+		if err := a.broker.SendPacketFactor(c); err != nil {
 			a.sendPacketError(conn.Error{Msg: err.Error(), Destination: from})
 		}
-		c.ReceiveMsgCh <- msg
+		c.CloseConnection()
 	}
 
 	if err := a.storage.AddMessage(msg); err != nil {
@@ -144,6 +154,7 @@ func (a *application) doneHandler(from []byte, rc *[]byte) {
 		return
 	}
 
-	fmt.Println(dPacket)
-	c.ReceiveDoneCh <- &dPacket
+	if c.IsClosed != 0 {
+		c.ReceiveDoneCh <- &dPacket
+	}
 }

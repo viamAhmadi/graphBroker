@@ -1,6 +1,7 @@
 package conn
 
 import (
+	"fmt"
 	"github.com/zeromq/goczmq"
 )
 
@@ -36,5 +37,7 @@ func (b *Broker) SendPacketFactor(c *Connection) error {
 	if err != nil {
 		return err
 	}
-	return b.sock.SendFrame(*SerializeFactor(c.Destination, c.Sign, c.Successful, c.MissingMessages), goczmq.FlagNone)
+	f := SerializeFactor(c.Destination, c.Sign, c.Successful, c.MissingMessages)
+	fmt.Println(string(*f))
+	return b.sock.SendFrame(*f, goczmq.FlagNone)
 }

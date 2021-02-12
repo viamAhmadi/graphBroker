@@ -25,6 +25,8 @@ type Connection struct {
 	MissingMessages      *[]string
 	Dealer               *goczmq.Sock
 	SendSign             string
+	IsClosed             int
+	Counter              int
 }
 
 func ConvertToConnection(from []byte, b []byte) (*Connection, error) {
@@ -52,7 +54,7 @@ func ConvertToConnection(from []byte, b []byte) (*Connection, error) {
 		Count:           count,
 		FirstMsgId:      firstMsgId,
 		EndMsgId:        endMsgId,
-		ReceiveMsgCh:    make(chan *Message),
+		ReceiveMsgCh:    make(chan *Message,5000),
 		ReceiveDoneCh:   make(chan *Done),
 		ReceiveSendCh:   make(chan *Send),
 		ReceiveFactorCh: make(chan *Factor),
@@ -61,6 +63,8 @@ func ConvertToConnection(from []byte, b []byte) (*Connection, error) {
 		MissingMessages: &[]string{},
 		Successful:      NO,
 		SendSign:        "-1",
+		IsClosed:        0,
+		Counter:         0,
 	}, nil
 }
 
@@ -79,7 +83,6 @@ func (c *Connection) CalculateMissingMessages() int {
 	for i := c.FirstMsgId; i <= c.EndMsgId; i++ {
 		strI := strconv.Itoa(i)
 		if m := c.Messages.Get(strI); m == nil {
-			fmt.Println("missed: ", strI)
 			*c.MissingMessages = append(*c.MissingMessages, strI)
 			missed += 1
 		}
@@ -99,7 +102,10 @@ func (c *Connection) AddMsg(m *Message) error {
 }
 
 func (c *Connection) CloseConnection() {
-	close(c.CloseConnCh)
+	if c.IsClosed != 1 {
+		close(c.CloseConnCh)
+		c.IsClosed = 1
+	}
 }
 
 func SendFrame(c *Connection, msg *Message) error {
