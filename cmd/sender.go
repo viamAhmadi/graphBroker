@@ -52,7 +52,7 @@ func (a *application) forward(cRec *gConn.ReceiveConn) {
 							if err := a.storage.SaveFailedMessages(c.Id, &messages); err != nil {
 								a.errorLog.Println(err)
 							}
-							if err := a.storage.SaveFailedSentConnection(c); err != nil {
+							if err := a.storage.SaveFailedSentConnection(cRec); err != nil {
 								a.errorLog.Println(err)
 							}
 						}()
@@ -67,7 +67,7 @@ func (a *application) forward(cRec *gConn.ReceiveConn) {
 						if err := a.storage.SaveFailedMessages(c.Id, cRec.Messages); err != nil {
 							a.errorLog.Println(err)
 						}
-						if err := a.storage.SaveFailedSentConnection(c); err != nil {
+						if err := a.storage.SaveFailedSentConnection(cRec); err != nil {
 							a.errorLog.Println(err)
 						}
 					}()

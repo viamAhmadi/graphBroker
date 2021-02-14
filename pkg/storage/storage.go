@@ -4,7 +4,6 @@ import (
 	"encoding/gob"
 	"fmt"
 	"github.com/viamAhmadi/gReceiver2/pkg/conn"
-	sConn "github.com/viamAhmadi/gSender/pkg/conn"
 	"io/ioutil"
 	"os"
 )
@@ -113,7 +112,7 @@ func (s *Storage) SaveReceivedConnection(c *conn.ReceiveConn) error {
 		Successful: c.Successful,
 	})
 }
-func (s *Storage) SaveFailedSentConnection(c *sConn.SendConn) error {
+func (s *Storage) SaveFailedSentConnection(c *conn.ReceiveConn) error {
 	if s.saveFailedSentConnection == NO {
 		return nil
 	}
@@ -140,19 +139,19 @@ func (s *Storage) ReadFailedSentMessages(connId string) (*conn.Messages, error) 
 	return &ms, gob.NewDecoder(f).Decode(&ms)
 }
 
-func (s *Storage) ReadFailedSentConnections() (*sConn.SendConns, error) {
+func (s *Storage) ReadFailedSentConnections() (*conn.ReceivedConns, error) {
 	files, err := ioutil.ReadDir("./var/connections/failed")
 	if err != nil {
 		return nil, err
 	}
 
-	var conns = sConn.SendConns{}
+	var conns = conn.ReceivedConns{}
 	for _, file := range files {
 		f, err := os.Open(fmt.Sprintf("var/connections/failed/%s", file.Name()))
 		if err != nil {
 			return nil, err
 		}
-		var c sConn.SendConn
+		var c conn.ReceiveConn
 		if err := gob.NewDecoder(f).Decode(&c); err != nil {
 			return nil, err
 		}

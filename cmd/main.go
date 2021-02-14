@@ -40,6 +40,12 @@ func main() {
 
 	app.infoLog.Println("starting broker...")
 
+	go func() {
+		if err := app.StartScheduler(); err != nil {
+			app.errorLog.Println(errorLog)
+		}
+	}()
+
 	if err := app.startReceiving(*addr); err != nil {
 		panic(err)
 	}
