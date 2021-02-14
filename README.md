@@ -1,1 +1,2 @@
 # graphBroker 
+go run cmd/*
