@@ -1,0 +1,8 @@
+github.com/viamAhmadi/gReceiver2 v0.0.0-20210213084911-a713c9b7bfec/go.mod h1:S/lHUWMopPT57nrok6JRbASJv8PIqHi7BuJgLY7yjTE=
+github.com/viamAhmadi/gReceiver2 v0.0.0-20210214070951-0410bd42c4e3 h1:9nTY0jPGVPZP8tIT5wTAKWK0mrWDw63f69FyrTcn6YQ=
+github.com/viamAhmadi/gReceiver2 v0.0.0-20210214070951-0410bd42c4e3/go.mod h1:S/lHUWMopPT57nrok6JRbASJv8PIqHi7BuJgLY7yjTE=
+github.com/viamAhmadi/gSender v0.0.0-20210213112933-d0bbd049586f h1:wNkBymZoJCfRKXgFSTTqPlAcdrA4QQHzIVhA3iSlRXE=
+github.com/viamAhmadi/gSender v0.0.0-20210213112933-d0bbd049586f/go.mod h1:IuLbRIX7ove8hhez30eANlVNZQYMKDFJtdyNsKsv86A=
+github.com/viamAhmadi/graphBroker v0.0.0-20210212163144-4f135557665a/go.mod h1:zuh+01rnu3QeVbqdcpIgoUlaLtp4SRd4uavA3kSxmcI=
+github.com/zeromq/goczmq v4.1.0+incompatible h1:cGVQaU6kIwwrGso0Pgbl84tzAz/h7FJ3wYQjSonjFFc=
+github.com/zeromq/goczmq v4.1.0+incompatible/go.mod h1:1uZybAJoSRCvZMH2rZxEwWBSmC4T7CB/xQOfChwPEzg=
